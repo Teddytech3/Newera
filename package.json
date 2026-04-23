@@ -1,0 +1,30 @@
+{
+  "name": "teddy-xmd",
+  "version": "2.0.0",
+  "description": "Advanced WhatsApp Bot with Web Panel & Session Manager",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": ["whatsapp-bot", "baileys", "teddy-xmd"],
+  "author": "Teddy Tech",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.8",
+    "@hapi/boom": "^10.0.1",
+    "pino": "^9.3.2",
+    "mongoose": "^8.8.1",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.7",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

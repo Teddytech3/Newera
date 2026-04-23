@@ -1,0 +1,45 @@
+{
+  "name": "TEDDY-XMD v2.0",
+  "description": "Advanced WhatsApp Bot with Web Panel, Session Manager, Auto Join/Follow",
+  "repository": "https://github.com/yourusername/teddy-xmd",
+  "logo": "https://i.imgur.com/8Km9tLL.png",
+  "keywords": ["whatsapp", "bot", "baileys", "teddy-xmd", "nodejs"],
+  "env": {
+    "OWNER_NUMBER": {
+      "description": "Your WhatsApp number without + or spaces",
+      "value": "254712345678",
+      "required": true
+    },
+    "MONGODB_URI": {
+      "description": "MongoDB connection string from MongoDB Atlas",
+      "value": "",
+      "required": true
+    },
+    "SESSION_B64": {
+      "description": "Optional: TEDDY-XMD~ session string. Leave empty to pair with phone",
+      "value": "",
+      "required": false
+    },
+    "PORT": {
+      "description": "Web panel port",
+      "value": "3000",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "stack": "heroku-24",
+  "success_url": "/",
+  "scripts": {
+    "postdeploy": "echo 'TEDDY-XMD deployed! Open app to pair.'"
+  }
+}
