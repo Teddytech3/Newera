@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEDDY-XMD Multi-User</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a; color: #fff; padding: 20px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 30px; }
+    .card {
+      background: #1a1a1a; border: 1px solid #333; border-radius: 12px;
+      padding: 20px; margin-bottom: 20px;
+    }
+    input {
+      width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333;
+      border-radius: 8px; color: #fff; margin-bottom: 10px;
+    }
+    button {
+      width: 100%; padding: 12px; background: #10b981; border: none;
+      border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;
+    }
+    button:hover { background: #059669; }
+    .btn-red { background: #ef4444; }
+    .btn-red:hover { background: #dc2626; }
+    .status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .connected { background: #10b981; }
+    .pairing { background: #f59e0b; }
+    .disconnected { background: #ef4444; }
+    .user-card {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px; background: #0a0a0a; border-radius: 8px; margin-bottom: 10px;
+    }
+    .code { font-size: 24px; letter-spacing: 4px; color: #10b981; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 TEDDY-XMD Multi-User</h1>
+    
+    <div class="card">
+      <h3 style="margin-bottom: 15px;">Create New Bot</h3>
+      <input type="text" id="username" placeholder="Username (e.g. john)">
+      <input type="text" id="phone" placeholder="WhatsApp Number (254712345678)">
+      <button onclick="createBot()">Get Pairing Code</button>
+      <div id="pairResult" style="margin-top: 15px;"></div>
+    </div>
+    
+    <div class="card">
+      <h3 style="margin-bottom: 15px;">Active Bots</h3>
+      <div id="usersList">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    async function createBot() {
+      const username = document.getElementById('username').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      if (!username ||!phone) return alert('Fill all fields');
+      
+      const res = await fetch('/api/pair', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username, number: phone })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        document.getElementById('pairResult').innerHTML = `
+          <p>✅ Code for ${data.username}:</p>
+          <div class="code">${data.code}</div>
+          <p style="font-size: 12px; color: #888; margin-top: 10px;">
+            WhatsApp → Linked Devices → Link with phone number
+          </p>
+        `;
+        loadUsers();
+      } else {
+        alert('Error: ' + data.error);
+      }
+    }
+    
+    async function loadUsers() {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+      const list = document.getElementById('usersList');
+      
+      if (users.length === 0) {
+        list.innerHTML = '<p style="color: #666;">No active bots</p>';
+        return;
+      }
+      
+      list.innerHTML = users.map(u => `
+        <div class="user-card">
+          <div>
+            <strong>${u.username}</strong>
+            <span class="status ${u.status}">${u.status}</span>
+            ${u.pairingCode ? `<div class="code" style="font-size: 16px; margin-top: 5px;">${u.pairingCode}</div>` : ''}
+          </div>
+          <div>
+            ${u.status === 'connected' ? `<button onclick="exportSession('${u.username}')" style="width: auto; padding: 8px 12px; font-size: 12px; margin-right: 5px;">Export</button>` : ''}
+            <button onclick="logout('${u.username}')" class="btn-red" style="width: auto; padding: 8px 12px; font-size: 12px;">Logout</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    async function exportSession(username) {
+      const res = await fetch(`/api/session/${username}`);
+      const data = await res.json();
+      if (data.session) {
+        navigator.clipboard.writeText(data.session);
+        alert('✅ Session copied!\n\n' + data.session);
+      } else {
+        alert('Error: ' + data.error);
+      }
+    }
+    
+    async function logout(username) {
+      if (!confirm(`Logout ${username}?`)) return;
+      await fetch(`/api/logout/${username}`, { method: 'DELETE' });
+      loadUsers();
+    }
+    
+    loadUsers();
+    setInterval(loadUsers, 3000);
+  </script>
+</body>
+</html>
