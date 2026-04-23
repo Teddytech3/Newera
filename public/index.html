@@ -3,130 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEDDY-XMD Multi-User</title>
+  <title>TEDDY-XMD Monitor</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0a0a0a; color: #fff; padding: 20px;
-    }
-    .container { max-width: 600px; margin: 0 auto; }
-    h1 { text-align: center; margin-bottom: 30px; }
-    .card {
-      background: #1a1a1a; border: 1px solid #333; border-radius: 12px;
-      padding: 20px; margin-bottom: 20px;
-    }
-    input {
-      width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333;
-      border-radius: 8px; color: #fff; margin-bottom: 10px;
-    }
-    button {
-      width: 100%; padding: 12px; background: #10b981; border: none;
-      border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; padding: 20px; }
+   .container { max-width: 1400px; margin: 0 auto; }
+   .login-box { max-width: 400px; margin: 100px auto; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 30px; text-align: center; }
+    input { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; color: #fff; margin: 10px 0; }
+    button { width: 100%; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; }
     button:hover { background: #059669; }
-    .btn-red { background: #ef4444; }
-    .btn-red:hover { background: #dc2626; }
-    .status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-    .connected { background: #10b981; }
-    .pairing { background: #f59e0b; }
-    .disconnected { background: #ef4444; }
-    .user-card {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 15px; background: #0a0a0a; border-radius: 8px; margin-bottom: 10px;
-    }
-    .code { font-size: 24px; letter-spacing: 4px; color: #10b981; font-weight: bold; }
+   .btn-red { background: #ef4444; }
+   .hidden { display: none; }
+   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+   .stat-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 15px; text-align: center; }
+   .stat-value { font-size: 28px; font-weight: bold; color: #10b981; }
+   .stat-label { font-size: 12px; color: #888; margin-top: 5px; }
+   .progress-bar { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+   .progress-fill { height: 100%; background: #10b981; transition: width 0.3s; }
+   .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+   .card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; }
+    textarea { width: 100%; height: 200px; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; color: #fff; font-family: monospace; font-size: 12px; resize: vertical; }
+   .status { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+   .connected { background: #10b981; }
+   .connecting { background: #f59e0b; }
+   .logged_out { background: #ef4444; }
+   .bot-card { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
+   .bot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+   .bot-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 11px; color: #888; margin-bottom: 10px; }
+   .logs { background: #000; border: 1px solid #222; border-radius: 6px; padding: 10px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #0f0; white-space: pre-wrap; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🤖 TEDDY-XMD Multi-User</h1>
-    
-    <div class="card">
-      <h3 style="margin-bottom: 15px;">Create New Bot</h3>
-      <input type="text" id="username" placeholder="Username (e.g. john)">
-      <input type="text" id="phone" placeholder="WhatsApp Number (254712345678)">
-      <button onclick="createBot()">Get Pairing Code</button>
-      <div id="pairResult" style="margin-top: 15px;"></div>
+    <div id="loginScreen" class="login-box">
+      <h1>🔒 TEDDY-XMD</h1>
+      <input type="password" id="password" placeholder="Admin Password" onkeypress="if(event.key==='Enter') login()">
+      <button onclick="login()">Login</button>
+      <div id="loginError" style="color: #ef4444; margin-top: 10px; font-size: 12px;"></div>
     </div>
-    
-    <div class="card">
-      <h3 style="margin-bottom: 15px;">Active Bots</h3>
-      <div id="usersList">Loading...</div>
+
+    <div id="dashboard" class="hidden">
+      <h1>🤖 TEDDY-XMD Multi-Bot Monitor</h1>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="totalBots">0</div><div class="stat-label">Total Bots</div></div>
+        <div class="stat-card"><div class="stat-value" id="activeBots">0</div><div class="stat-label">Active</div></div>
+        <div class="stat-card"><div class="stat-value" id="ramUsed">0 MB</div><div class="stat-label">RAM Used</div><div class="progress-bar"><div class="progress-fill" id="ramBar"></div></div></div>
+        <div class="stat-card"><div class="stat-value" id="cpuLoad">0%</div><div class="stat-label">CPU Load</div><div class="progress-bar"><div class="progress-fill" id="cpuBar"></div></div></div>
+        <div class="stat-card"><div class="stat-value" id="heapUsed">0 MB</div><div class="stat-label">Node Heap</div></div>
+        <div class="stat-card"><div class="stat-value" id="uptime">0m</div><div class="stat-label">Server Uptime</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3 style="margin-bottom: 15px;">Bulk Import Sessions</h3>
+          <p style="font-size: 12px; color: #888; margin-bottom: 10px;">
+            Format 1: <code>name:TEDDY-XMD~session</code><br>
+            Format 2: <code>TEDDY-XMD~session</code> → Auto-named
+          </p>
+          <textarea id="bulkSessions" placeholder="main:TEDDY-XMD~eyJub2l...&#10;vip:TEDDY-XMD~eyJub2l...&#10;TEDDY-XMD~eyJub2l..."></textarea>
+          <button onclick="bulkImport()">🚀 Start All Bots</button>
+          <div id="importResult" style="margin-top: 15px; font-size: 12px;"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-bottom: 15px;">Active Bots</h3>
+          <div id="botsList">No bots running</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    async function createBot() {
-      const username = document.getElementById('username').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      if (!username ||!phone) return alert('Fill all fields');
-      
-      const res = await fetch('/api/pair', {
+    let authPassword = '';
+
+    async function login() {
+      const pass = document.getElementById('password').value;
+      const res = await fetch('/api/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ username, number: phone })
+        body: JSON.stringify({ password: pass })
+      });
+      if (res.ok) {
+        authPassword = pass;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        loadStats();
+        setInterval(loadStats, 3000);
+      } else {
+        document.getElementById('loginError').innerText = 'Wrong password';
+      }
+    }
+
+    async function bulkImport() {
+      const text = document.getElementById('bulkSessions').value.trim();
+      if (!text) return alert('Paste sessions first');
+      const sessions = text.split('\n').filter(l => l.trim().includes('TEDDY-XMD~'));
+      if (!sessions.length) return alert('No valid sessions');
+      document.getElementById('importResult').innerHTML = '⏳ Starting bots...';
+      const res = await fetch('/api/bulk-import', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'password': authPassword},
+        body: JSON.stringify({ sessions })
       });
       const data = await res.json();
-      
-      if (data.success) {
-        document.getElementById('pairResult').innerHTML = `
-          <p>✅ Code for ${data.username}:</p>
-          <div class="code">${data.code}</div>
-          <p style="font-size: 12px; color: #888; margin-top: 10px;">
-            WhatsApp → Linked Devices → Link with phone number
-          </p>
-        `;
-        loadUsers();
-      } else {
-        alert('Error: ' + data.error);
-      }
+      const success = data.results.filter(r => r.success);
+      document.getElementById('importResult').innerHTML = `✅ Started ${success.length}/${data.results.length}: ${success.map(r => r.username).join(', ')}`;
+      document.getElementById('bulkSessions').value = '';
     }
-    
-    async function loadUsers() {
-      const res = await fetch('/api/users');
-      const users = await res.json();
-      const list = document.getElementById('usersList');
-      
-      if (users.length === 0) {
-        list.innerHTML = '<p style="color: #666;">No active bots</p>';
+
+    async function loadStats() {
+      const res = await fetch('/api/stats', { headers: {'password': authPassword} });
+      if (!res.ok) return;
+      const data = await res.json();
+      document.getElementById('totalBots').innerText = data.total;
+      document.getElementById('activeBots').innerText = data.active;
+      document.getElementById('ramUsed').innerText = `${data.system.ram.used}/${data.system.ram.total} MB`;
+      document.getElementById('ramBar').style.width = data.system.ram.percent + '%';
+      document.getElementById('cpuLoad').innerText = data.system.cpu.percent + '%';
+      document.getElementById('cpuBar').style.width = data.system.cpu.percent + '%';
+      document.getElementById('heapUsed').innerText = data.process.heapUsed + ' MB';
+      document.getElementById('uptime').innerText = data.system.uptime + 'm';
+
+      const list = document.getElementById('botsList');
+      if (!data.bots.length) {
+        list.innerHTML = '<p style="color: #666;">No bots running</p>';
         return;
       }
-      
-      list.innerHTML = users.map(u => `
-        <div class="user-card">
-          <div>
-            <strong>${u.username}</strong>
-            <span class="status ${u.status}">${u.status}</span>
-            ${u.pairingCode ? `<div class="code" style="font-size: 16px; margin-top: 5px;">${u.pairingCode}</div>` : ''}
+      list.innerHTML = data.bots.map(b => `
+        <div class="bot-card">
+          <div class="bot-header">
+            <div><strong>${b.username}</strong><span class="status ${b.status}">${b.status}</span><div style="font-size: 11px; color: #888; margin-top: 4px;">${b.number}</div></div>
+            <button onclick="stopBot('${b.username}')" class="btn-red" style="width: auto; padding: 6px 12px; font-size: 11px;">Stop</button>
           </div>
-          <div>
-            ${u.status === 'connected' ? `<button onclick="exportSession('${u.username}')" style="width: auto; padding: 8px 12px; font-size: 12px; margin-right: 5px;">Export</button>` : ''}
-            <button onclick="logout('${u.username}')" class="btn-red" style="width: auto; padding: 8px 12px; font-size: 12px;">Logout</button>
-          </div>
+          <div class="bot-stats"><div>⏱️ ${b.uptime}m</div><div>📨 ${b.msgCount}</div><div>⚡ ${b.cpu}s</div><div>${b.status === 'connected'? '🟢' : '🔴'}</div></div>
+          <div class="logs" id="logs-${b.username}">Loading...</div>
         </div>
       `).join('');
+      data.bots.forEach(b => loadLogs(b.username));
     }
-    
-    async function exportSession(username) {
-      const res = await fetch(`/api/session/${username}`);
+
+    async function loadLogs(username) {
+      const res = await fetch(`/api/logs/${username}`, { headers: {'password': authPassword} });
       const data = await res.json();
-      if (data.session) {
-        navigator.clipboard.writeText(data.session);
-        alert('✅ Session copied!\n\n' + data.session);
-      } else {
-        alert('Error: ' + data.error);
+      const el = document.getElementById(`logs-${username}`);
+      if (el) {
+        el.innerText = data.logs.slice(-20).join('\n') || 'No logs yet';
+        el.scrollTop = el.scrollHeight;
       }
     }
-    
-    async function logout(username) {
-      if (!confirm(`Logout ${username}?`)) return;
-      await fetch(`/api/logout/${username}`, { method: 'DELETE' });
-      loadUsers();
+
+    async function stopBot(username) {
+      if (!confirm(`Stop ${username}?`)) return;
+      await fetch(`/api/stop/${username}`, { method: 'DELETE', headers: {'password': authPassword} });
+      loadStats();
     }
-    
-    loadUsers();
-    setInterval(loadUsers, 3000);
   </script>
 </body>
 </html>
