@@ -1,7 +1,7 @@
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
-import fs, { readdirSync } from 'fs';
+import fs from 'fs';
 import mongoose from 'mongoose';
 import express from 'express';
 import dotenv from 'dotenv';
@@ -56,9 +56,32 @@ function getProcessStats() {
   const mem = process.memoryUsage();
   return {
     heapUsed: (mem.heapUsed / 1024 / 1024).toFixed(2),
-    rss: (mem.rss / 1024 / 1024).toFixed(2)
+    rss: (mem.rss / 1024).toFixed(2)
   };
 }
+
+// HARDCODED COMMANDS - Add your commands here
+const COMMANDS = {
+  ping: async (sock, msg, args) => {
+    const start = Date.now();
+    await sock.sendMessage(msg.key.remoteJid, { text: '🏓 Pong!' }, { quoted: msg });
+    await sock.sendMessage(msg.key.remoteJid, { text: `⚡ Speed: ${Date.now() - start}ms` });
+  },
+
+  menu: async (sock, msg, args) => {
+    const menuText = `🤖 *TEDDY-XMD MENU*\n\n.ping - Check bot speed\n.menu - Show this menu\n.info - Bot info\n\n_Total commands: ${Object.keys(COMMANDS).length}_`;
+    await sock.sendMessage(msg.key.remoteJid, { text: menuText }, { quoted: msg });
+  },
+
+  info: async (sock, msg, args) => {
+    const uptime = process.uptime();
+    const hours = Math.floor(uptime / 3600);
+    const mins = Math.floor((uptime % 3600) / 60);
+    await sock.sendMessage(msg.key.remoteJid, {
+      text: `📊 *BOT INFO*\n\n⏱️ Uptime: ${hours}h ${mins}m\n👤 Bot: ${sock.user?.name || 'TEDDY-XMD'}\n📱 Number: ${sock.user?.id?.split(':')[0]}`
+    }, { quoted: msg });
+  }
+};
 
 async function connectDB() {
   try {
@@ -105,24 +128,7 @@ async function createBotInstance(username, sessionB64) {
   });
 
   stats.set(username, { cpu: 0, lastCpu: process.cpuUsage() });
-
-  // Load plugins
-  const commands = new Map();
-  const pluginPath = path.join(__dirname, 'plugins');
-  if (fs.existsSync(pluginPath)) {
-    const pluginFiles = readdirSync(pluginPath).filter(f => f.endsWith('.js'));
-    for (const file of pluginFiles) {
-      try {
-        const plugin = await import(`./plugins/${file}?update=${Date.now()}`);
-        if (plugin.command && plugin.handler) {
-          commands.set(plugin.command, plugin.handler);
-        }
-      } catch (e) {
-        addLog(username, `❌ Plugin ${file}: ${e.message}`);
-      }
-    }
-    addLog(username, `✅ Loaded ${commands.size} plugins`);
-  }
+  addLog(username, `✅ Loaded ${Object.keys(COMMANDS).length} built-in commands`);
 
   sock.ev.on('creds.update', saveCreds);
 
@@ -162,12 +168,12 @@ async function createBotInstance(username, sessionB64) {
     const cmd = text.slice(1).split(' ')[0].toLowerCase();
     const args = text.slice(1).split(' ').slice(1);
 
-    if (commands.has(cmd)) {
+    if (COMMANDS[cmd]) {
       try {
-        addLog(username, `⚡ Command:.${cmd}`);
-        await commands.get(cmd)(sock, msg, args);
+        addLog(username, `⚡.${cmd} from ${msg.key.remoteJid.split('@')[0]}`);
+        await COMMANDS[cmd](sock, msg, args);
       } catch (e) {
-        addLog(username, `❌ Cmd error.${cmd}: ${e.message}`);
+        addLog(username, `❌ Error.${cmd}: ${e.message}`);
       }
     }
   });
@@ -213,7 +219,8 @@ app.get('/api/stats', checkAuth, (req, res) => {
     number: data.number || 'connecting...',
     uptime: Math.floor((Date.now() - data.startTime) / 1000 / 60),
     msgCount: data.msgCount,
-    cpu: stats.get(username)?.cpu || '0.00'
+    cpu: stats.get(username)?.cpu || '0.00',
+    commands: Object.keys(COMMANDS).length
   }));
 
   res.json({
@@ -274,7 +281,6 @@ app.delete('/api/stop/:username', checkAuth, (req, res) => {
 app.listen(process.env.PORT || 3000, async () => {
   await connectDB();
   if (!fs.existsSync('./sessions')) fs.mkdirSync('./sessions');
-  if (!fs.existsSync('./plugins')) fs.mkdirSync('./plugins');
   addLog('SYSTEM', `🌐 Panel on port ${process.env.PORT || 3000}`);
 });
 
